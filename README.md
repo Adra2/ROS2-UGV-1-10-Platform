@@ -18,10 +18,12 @@ The system follows a modular and layered robotics architecture to ensure scalabi
 
 The software stack is organized into independent functional layers:
 
+
 **Sensors → Perception → Navigation → Control → Actuation
                    ↘
                  State Manager**
-Core Modules
+                 
+**Core Modules**
 Package	Responsibility
 rc_drivers	Hardware abstraction (camera, GPS, IMU, ESC, steering)
 rc_perception	Vision processing and feature extraction
@@ -67,7 +69,9 @@ Safe stop fallback
 
 The control layer receives unified velocity and steering commands regardless of active mode.
 
+
 ⚙️ **Technologies**
+
 ROS 2
 C++ / Python
 OpenCV (for vision)
@@ -81,7 +85,9 @@ Hardware abstraction layer
 No hard-coded parameters (ROS parameters used)
 Clean topic-based communication
 Scalable for future extensions (e.g., SLAM, obstacle avoidance)
+
 🚀 **Running the System**
+
 colcon build
 source install/setup.bash
 ros2 launch rc_bringup full_system.launch.py
@@ -91,3 +97,35 @@ Obstacle detection
 Dynamic speed adaptation
 Behavior tree–based decision layer
 Multi-robot scalability
+
+
+
+
+                 ┌────────────────────┐
+                 │     perception     │
+                 │                    │
+                 │ - visual goal      │
+                 │ - obstacle detect  │
+                 └─────────┬──────────┘
+                           │
+                           ▼
+                 ┌────────────────────┐
+                 │      control       │
+                 │                    │
+                 │ - goal following   │
+                 │ - GPS navigation   │
+                 │ - safety logic     │
+                 └─────────┬──────────┘
+                           │
+                           ▼
+              ┌─────────────────────────┐
+              │    vehicle_interface    │
+              │ (ROS → PWM abstraction) │
+              └─────────┬───────────────┘
+                           │
+                           ▼
+                 ┌────────────────────┐
+                 │    PCA9685 driver  │
+                 └────────────────────┘
+                           │
+                    Steering + ESC
