@@ -1,0 +1,5 @@
+pca9685_node:
+  ros__parameters:
+    frequency: 50
+    steering_channel: 0
+    throttle_channel: 1
