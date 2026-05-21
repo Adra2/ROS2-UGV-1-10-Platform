@@ -1,0 +1,15 @@
+# config/vehicle_interface.yaml
+# Parameters for vehicle_interface node and pca9685_node
+
+vehicle_interface:
+  ros__parameters:
+    pwm_center:       1500    # µs — neutral / servo centre
+    pwm_range:        500     # µs — so full deflection = center ± range (1000…2000)
+    deadman_timeout:  0.2     # s  — publish neutral if no /cmd_* received
+    arm_time_s:       2.0     # s  — ESC arming hold time
+
+pca9685_node:
+  ros__parameters:
+    frequency:        50      # Hz — standard servo/ESC PWM frequency
+    steering_channel: 0       # PCA9685 channel for GOUPRC servo
+    throttle_channel: 1       # PCA9685 channel for GoolRC ESC

@@ -13,20 +13,15 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='yelos',
-    maintainer_email='yelos@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
-    extras_require={
-        'test': [
-            'pytest',
-        ],
-    },
+    maintainer='Carola Adrados Herrero',
+    maintainer_email='adradoshc@gmail.com',
+    description='Vehicle interface: normalised commands → PWM µs, deadman, ESC arming',
+    license='MIT',
+    extras_require={'test': ['pytest']},
     entry_points={
         'console_scripts': [
+            # executable name matches what launch files use
             'vehicle_interface = vehicle_interface.interface_node:main',
-            'servo_node = vehicle_interface.servo_node:main',
-            'esc_node   = vehicle_interface.esc_node:main',
         ],
     },
 )

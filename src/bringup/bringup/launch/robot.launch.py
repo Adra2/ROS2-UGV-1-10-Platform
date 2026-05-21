@@ -1,50 +1,57 @@
 """
-robot.launch.py  —  Full robot bringup
+robot.launch.py  —  Main robot bringup
+Package:   bringup
+
 Usage:
-  ros2 launch bringup robot.launch.py
-  ros2 launch bringup robot.launch.py hardware_only:=true
+  ros2 launch bringup robot.launch.py                    # full launch
+  ros2 launch bringup robot.launch.py hardware_only:=true  # servo+ESC only
 """
 
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction
-from launch.conditions import IfCondition, UnlessCondition
+from launch.actions import DeclareLaunchArgument
+from launch.conditions import UnlessCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
+
     cfg_dir = os.path.join(
         get_package_share_directory('bringup'), 'config'
     )
 
-    # ── args ──────────────────────────────────────────────────────────────────
+    # ── launch args ───────────────────────────────────────────────────────────
     hardware_only = DeclareLaunchArgument(
         'hardware_only', default_value='false',
-        description='Launch only hardware nodes (no perception/sensors)'
+        description='Start only hardware nodes (vehicle_interface + pca9685)'
     )
 
-    # ── hardware nodes ────────────────────────────────────────────────────────
-    servo_node = Node(
+    # ── hardware layer ────────────────────────────────────────────────────────
+
+    # Converts normalised Float32 → µs Int16, deadman watchdog, ESC arming
+    vehicle_interface_node = Node(
         package    = 'vehicle_interface',
-        executable = 'servo_node',
-        name       = 'servo_node',
+        executable = 'vehicle_interface',       # entry_point in vehicle_interface/setup.py
+        name       = 'vehicle_interface',
         parameters = [os.path.join(cfg_dir, 'vehicle_interface.yaml')],
         output     = 'screen',
         emulate_tty = True,
     )
 
-    esc_node = Node(
-        package    = 'vehicle_interface',
-        executable = 'esc_node',
-        name       = 'esc_node',
+    # Low-level PCA9685 I²C driver (adafruit_pca9685 / Blinka)
+    pca9685_node = Node(
+        package    = 'pca9685_driver',
+        executable = 'pca9685_node',            # entry_point in pca9685_driver/setup.py
+        name       = 'pca9685_node',
         parameters = [os.path.join(cfg_dir, 'vehicle_interface.yaml')],
         output     = 'screen',
         emulate_tty = True,
     )
 
-    # ── sensor nodes ─────────────────────────────────────────────────────────
+    # ── sensor layer ──────────────────────────────────────────────────────────
+
     gps_node = Node(
         package    = 'sensors',
         executable = 'gps_node',
@@ -63,7 +70,8 @@ def generate_launch_description():
         condition  = UnlessCondition(LaunchConfiguration('hardware_only')),
     )
 
-    # ── perception nodes ──────────────────────────────────────────────────────
+    # ── perception layer ──────────────────────────────────────────────────────
+
     camera_node = Node(
         package    = 'perception',
         executable = 'camera_node',
@@ -75,8 +83,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         hardware_only,
-        servo_node,
-        esc_node,
+        vehicle_interface_node,
+        pca9685_node,
         gps_node,
         rc_receiver_node,
         camera_node,
