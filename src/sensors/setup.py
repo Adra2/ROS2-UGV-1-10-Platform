@@ -24,6 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'gps_node         = sensors.gps_node:main',
+            'rc_receiver_node = sensors.rc_receiver_node:main',
         ],
     },
 )

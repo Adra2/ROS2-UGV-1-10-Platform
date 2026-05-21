@@ -1,16 +1,10 @@
-# ROS2 build artifacts
 build/
 install/
 log/
-
-# Python
-__pycache__/
-*.pyc
-venv/
-
-# VSCode
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.egg-info/
+.colcon_install_layout
 .vscode/
-
-# OS
-.DS_Store
-
+*.swp

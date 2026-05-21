@@ -1,93 +1,187 @@
-# ROS2-UGV-1-10-Platform
-ROS 2 modular architecture for a 1/10 autonomous RC car. Supports indoor vision-based track following and outdoor GPS waypoint navigation. Designed with separate sensing, navigation, control, and state management layers for clean structure, scalability, and easy experimentation.
+# autonomous_rc_ws
 
+ROS2 workspace for a 1/10 scale autonomous RC car.
+**Platform:** Raspberry Pi 4 (4GB) · Ubuntu 22.04 · ROS2 Humble
 
-**🚗 1/10 Scale Autonomous RC Vehicle – ROS 2**
-📌 Overview
+---
 
-This repository contains the software architecture for a 1/10 scale autonomous RC vehicle built using ROS 2.
+## Hardware
 
-The platform is designed to operate in both:
+| Component | Model | Interface |
+|---|---|---|
+| Compute | Raspberry Pi 4 4GB | — |
+| PWM Controller | PCA9685 (Dorhea) | I²C bus 1, addr 0x40 |
+| Steering Servo | GOUPRC 20kg Low-Profile | PCA9685 ch 0 |
+| Brushless Motor | GoolRC 3650 3100KV | — |
+| ESC | GoolRC 60A sensorless | PCA9685 ch 1 |
+| RC Receiver | DUMBORC X6FG (gyro) | GPIO 18 PPM |
+| GPS | Ublox NEO-6M | UART /dev/serial0 |
+| Camera | Luxonis OAK-D Lite | USB3 |
+| Battery | 2S LiPo 7.4V 5200mAh | — |
+| DC-DC | Buck converter 5V/5A | Powers Pi |
 
-🏠 **Indoor environments** using camera-based vision for track following
-🌍 **Outdoor environments** using GPS-based waypoint navigation
+---
 
-The system follows a modular and layered robotics architecture to ensure scalability, maintainability, and clear separation of responsibilities.
+## Package map
 
-🏗️ System Architecture
+```
+src/
+├── pca9685_driver/     Low-level I²C driver + generic PWM node  ← already tested ✓
+├── vehicle_interface/  servo_node, esc_node  (use pca9685_driver)
+├── sensors/            gps_node, rc_receiver_node
+├── perception/         camera_node  (OAK-D Lite / DepthAI)
+├── control/            teleop_node, autonomous logic  (TODO)
+└── bringup/            launch files + config YAMLs
+```
 
-The software stack is organized into independent functional layers:
+---
 
-**Sensors → Perception → Navigation → Control → Actuation
-                   ↘
-                 State Manager**
-Core Modules
-Package	Responsibility
-rc_drivers	Hardware abstraction (camera, GPS, IMU, ESC, steering)
-rc_perception	Vision processing and feature extraction
-rc_navigation_indoor	Vision-based track following
-rc_navigation_outdoor	GPS waypoint navigation
-rc_control	Low-level steering and throttle control
-rc_state_manager	Mode switching (indoor / outdoor)
-rc_bringup	Launch files and system configuration
-rc_description	URDF model and TF tree
-🏠 Indoor Mode
+## Quick start
 
-**Indoor navigation relies on camera-based perception.**
+### 1. First-time setup
 
-Pipeline:
-
-Camera → Vision Processing → Path Estimation → Control
-
-Typical outputs:
-
-Lane/track center offset
-Direction estimation
-Confidence metric
-🌍 Outdoor Mode
-
-**Outdoor navigation uses GPS-based waypoint tracking.**
-
-Pipeline:
-
-GPS + IMU → Waypoint Tracking → Heading & Speed Command → Control
-
-Features:
-
-Waypoint following
-Heading correction
-Mode fallback support
-🔀 State Management
-
-**A dedicated state manager handles mode switching:
-**
-Indoor mode (vision-based)
-Outdoor mode (GPS-based)
-Safe stop fallback
-
-The control layer receives unified velocity and steering commands regardless of active mode.
-
-⚙️ **Technologies**
-ROS 2
-C++ / Python
-OpenCV (for vision)
-GPS module
-Raspberry Pi (onboard compute)
-PWM-based servo & ESC control
-🧠 **Design Principles**
-Modular ROS 2 packages
-Clear separation between perception, navigation, and control
-Hardware abstraction layer
-No hard-coded parameters (ROS parameters used)
-Clean topic-based communication
-Scalable for future extensions (e.g., SLAM, obstacle avoidance)
-🚀 **Running the System**
-colcon build
+```bash
+cd ~/autonomous_rc_ws
+rosdep install --from-paths src --ignore-src -r -y
+pip3 install smbus2 pyserial pynmea2 pigpio depthai
+colcon build --symlink-install
 source install/setup.bash
-ros2 launch rc_bringup full_system.launch.py
-📈 Future Improvements
-Sensor fusion (GPS + IMU EKF)
-Obstacle detection
-Dynamic speed adaptation
-Behavior tree–based decision layer
-Multi-robot scalability
+```
+
+### 2. Fix: remove stray build artefacts from source tree
+```bash
+# These ended up inside vehicle_interface/vehicle_interface/ — remove them:
+rm -rf src/vehicle_interface/vehicle_interface/build
+rm -rf src/vehicle_interface/vehicle_interface/install
+rm -rf src/vehicle_interface/vehicle_interface/log
+# Always run colcon from ~/autonomous_rc_ws, never from inside src/
+```
+
+### 3. Launch hardware only (servo + ESC)
+
+```bash
+ros2 launch bringup robot.launch.py hardware_only:=true
+```
+
+### 4. Arm ESC (required before throttle commands)
+
+```bash
+ros2 service call /esc/arm std_srvs/srv/Trigger
+```
+
+### 5. Test steering from command line
+
+```bash
+# Centre
+ros2 service call /servo/centre std_srvs/srv/Trigger
+
+# 15° right
+ros2 topic pub /cmd/steering_angle std_msgs/msg/Float32 '{data: 15.0}' --once
+
+# 15° left
+ros2 topic pub /cmd/steering_angle std_msgs/msg/Float32 '{data: -15.0}' --once
+
+# Direct µs (calibration)
+ros2 topic pub /cmd/servo_raw_us std_msgs/msg/Int32 '{data: 1500}' --once
+```
+
+### 6. Test throttle
+
+```bash
+# 20% forward
+ros2 topic pub /cmd/throttle std_msgs/msg/Float32 '{data: 0.2}' --once
+
+# Stop
+ros2 topic pub /cmd/throttle std_msgs/msg/Float32 '{data: 0.0}' --once
+```
+
+### 7. Full launch
+
+```bash
+sudo pigpiod                          # start pigpio daemon (for RC receiver)
+ros2 launch bringup robot.launch.py
+```
+
+---
+
+## Topic map
+
+```
+RC Receiver ──/rc/steering──────────────────────────────┐
+             ──/rc/throttle──────────────────────────────┤
+             ──/rc/mode (manual/auto)                    │
+                                                         ▼
+GPS      ──/gps/fix                            control/ (TODO)
+Camera   ──/camera/rgb/image_raw                        │
+         ──/camera/depth/image_raw                      │
+                                                    /cmd/steering_angle
+                                                    /cmd/throttle
+                                                         │
+                                             ┌───────────┴───────────┐
+                                             ▼                       ▼
+                                        servo_node              esc_node
+                                        (ch 0, PCA9685)         (ch 1, PCA9685)
+                                             │                       │
+                                        Steering Servo          Brushless ESC
+```
+
+---
+
+## Calibration notes
+
+### Servo centre trim
+If wheels aren't straight when `pulse_ctr_us: 1500`:
+```bash
+# While servo_node is running, try different values:
+ros2 topic pub /cmd/servo_raw_us std_msgs/msg/Int32 '{data: 1480}' --once  # trim left
+ros2 topic pub /cmd/servo_raw_us std_msgs/msg/Int32 '{data: 1520}' --once  # trim right
+# Then update pulse_ctr_us in config/vehicle_interface.yaml
+```
+
+### Servo travel limits
+```bash
+# Find actual mechanical limits (stop before hitting them):
+ros2 topic pub /cmd/servo_raw_us std_msgs/msg/Int32 '{data: 1000}' --once  # start here
+# Increase/decrease until you feel resistance. Note the values.
+# Then update pulse_min_us / pulse_max_us in vehicle_interface.yaml
+```
+
+### ESC calibration (if needed)
+Some ESCs require a one-time endpoint calibration:
+1. With battery disconnected, connect ESC signal wire to PCA9685 ch 1
+2. Send 2000 µs, connect battery → ESC beeps high
+3. Quickly send 1000 µs → ESC beeps low
+4. Send 1500 µs → ESC beeps armed
+
+---
+
+## Deploy to Raspberry Pi via GitHub
+
+```bash
+# On Pi (first time):
+git clone https://github.com/YOUR_USER/autonomous_rc_ws.git ~/autonomous_rc_ws
+cd ~/autonomous_rc_ws
+pip3 install smbus2 pyserial pynmea2 pigpio depthai
+colcon build --symlink-install
+echo "source ~/autonomous_rc_ws/install/setup.bash" >> ~/.bashrc
+
+# Pull updates:
+cd ~/autonomous_rc_ws
+git pull
+colcon build --symlink-install   # only needed if package.xml or entry_points changed
+                                  # with --symlink-install, .py edits take effect immediately
+```
+
+---
+
+## .gitignore
+
+```
+build/
+install/
+log/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.colcon_install_layout
+```

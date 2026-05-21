@@ -1,0 +1,20 @@
+# config/sensors.yaml
+
+gps_node:
+  ros__parameters:
+    port:         '/dev/serial0'   # or /dev/ttyAMA0 — check with: ls /dev/serial*
+    baud:         9600
+    frame_id:     'gps_link'
+    publish_raw:  false            # set true to see raw NMEA on /gps/nmea_raw
+
+rc_receiver_node:
+  ros__parameters:
+    ppm_gpio:     18    # BCM GPIO 18 — physical pin 12
+    num_channels: 6
+    pulse_min_us: 1000
+    pulse_max_us: 2000
+    pulse_ctr_us: 1500
+    failsafe_ms:  500   # ms without signal before failsafe kicks in
+    steering_ch:  0     # DUMBORC CH1 = right stick horizontal
+    throttle_ch:  1     # DUMBORC CH2 = right stick vertical (or CH2 depending on mode)
+    mode_ch:      4     # DUMBORC CH5 = aux switch → manual/autonomous toggle

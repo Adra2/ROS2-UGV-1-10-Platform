@@ -1,0 +1,24 @@
+# config/vehicle_interface.yaml
+# Parameters for servo_node and esc_node
+
+servo_node:
+  ros__parameters:
+    channel:       0          # PCA9685 channel 0
+    freq_hz:       50.0
+    pulse_min_us:  500.0      # ← adjust after mechanical install
+    pulse_max_us:  2500.0     # ← adjust after mechanical install
+    pulse_ctr_us:  1500.0     # ← trim here if wheels aren't centred
+    max_angle_deg: 30.0       # ± degrees, matches your steering rack
+    i2c_bus:       1
+    i2c_address:   0x40       # default PCA9685 (all solder pads open)
+
+esc_node:
+  ros__parameters:
+    channel:            1     # PCA9685 channel 1
+    freq_hz:            50.0
+    pulse_neutral_us:   1500.0
+    pulse_fwd_max_us:   2000.0
+    pulse_rev_max_us:   1000.0  # set to 1500 if ESC doesn't support reverse
+    arm_time_s:         2.0
+    i2c_bus:            1
+    i2c_address:        0x40

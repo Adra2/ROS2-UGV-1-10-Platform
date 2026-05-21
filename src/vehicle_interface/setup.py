@@ -25,6 +25,8 @@ setup(
     entry_points={
         'console_scripts': [
             'vehicle_interface = vehicle_interface.interface_node:main',
+            'servo_node = vehicle_interface.servo_node:main',
+            'esc_node   = vehicle_interface.esc_node:main',
         ],
     },
 )
