@@ -9,7 +9,7 @@ ROS2 workspace for a 1/10 scale autonomous RC car.
 
 | Component | Model | Interface |
 |---|---|---|
-| Compute | Raspberry Pi 4 4GB | — |
+| Compute | Raspberry Pi 5 8GB | — |
 | PWM Controller | PCA9685 (Dorhea) | I²C bus 1, addr 0x40 |
 | Steering Servo | GOUPRC 20kg Low-Profile | PCA9685 ch 0 |
 | Brushless Motor | GoolRC 3650 3100KV | — |
