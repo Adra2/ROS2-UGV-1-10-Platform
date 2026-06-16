@@ -9,9 +9,7 @@ class PCA9685Node(Node):
     def __init__(self):
         super().__init__('pca9685_node')
 
-        # =========================
-        # PARAMETERS (ROS2 STYLE)
-        # =========================
+        # PARAMETERS
         self.declare_parameter('frequency', 50)
         self.declare_parameter('steering_channel', 0)
         self.declare_parameter('throttle_channel', 1)
@@ -20,48 +18,33 @@ class PCA9685Node(Node):
         self.steering_channel = self.get_parameter('steering_channel').value
         self.throttle_channel = self.get_parameter('throttle_channel').value
 
-        # =========================
-        # HARDWARE INIT
-        # =========================
-        self.driver = PCA9685Driver(frequency=self.frequency)
+        # DRIVER
+        self.driver = PCA9685Driver(self.frequency)
 
-        # =========================
-        # SUBSCRIBERS
-        # =========================
+        # SUBS
         self.create_subscription(
             Int16,
-            'cmd_steering_pwm',
+            '/cmd_steering_pwm',
             self.steer_cb,
             10
         )
 
         self.create_subscription(
             Int16,
-            'cmd_throttle_pwm',
+            '/cmd_throttle_pwm',
             self.throttle_cb,
             10
         )
 
-        # =========================
-        # LOG
-        # =========================
-        self.get_logger().info("PCA9685 driver ready")
+        self.get_logger().info("PCA9685 node ready")
 
-    # =========================
-    # CALLBACKS
-    # =========================
     def steer_cb(self, msg):
-        pwm_us = msg.data
-        self.driver.set_pwm_us(self.steering_channel, pwm_us)
+        self.driver.set_pwm_us(self.steering_channel, msg.data)
 
     def throttle_cb(self, msg):
-        pwm_us = msg.data
-        self.driver.set_pwm_us(self.throttle_channel, pwm_us)
+        self.driver.set_pwm_us(self.throttle_channel, msg.data)
 
 
-# =========================
-# MAIN
-# =========================
 def main(args=None):
     rclpy.init(args=args)
     node = PCA9685Node()

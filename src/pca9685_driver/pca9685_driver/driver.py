@@ -1,6 +1,7 @@
 from adafruit_pca9685 import PCA9685
-import board
 import busio
+import board
+
 
 class PCA9685Driver:
 
@@ -10,9 +11,9 @@ class PCA9685Driver:
         self.pca.frequency = frequency
 
     def set_pwm_us(self, channel, pulse_us):
-        # PCA9685 trabaja en duty cycle
-        # 50Hz → 20ms period → 1 tick = 4.096µs aprox
-        pulse_length = 1000000 / self.pca.frequency
-        duty = int((pulse_us / pulse_length) * 65535)
+        period_us = 1_000_000 / self.pca.frequency
+        duty = int((pulse_us / period_us) * 65535)
+
+        duty = max(0, min(65535, duty))  # safety clamp
 
         self.pca.channels[channel].duty_cycle = duty
