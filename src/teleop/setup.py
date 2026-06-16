@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'control'
+package_name = 'teleop'
 
 setup(
     name=package_name,
@@ -13,7 +13,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='yelos',
+    maintainer='Carola A.H.',
     maintainer_email='adradoshc@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'control_mux = control.control_mux_node:main',
+            'teleop_pc = teleop.teleop_node:main',
         ],
     },
 )
